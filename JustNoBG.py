@@ -6,9 +6,13 @@ import math
 import tkinter
 import tkinter.filedialog as fd
 
+print(sys.argv)
+
 
 class Window:
-    def __init__(self):
+    def __init__(self, imgs=None):
+        if imgs is None:
+            imgs = []
         self.window = tkinter.Tk()
 
         self.window.geometry("475x400")
@@ -16,7 +20,8 @@ class Window:
         self.window.maxsize(475, 400)
 
         self.points = []
-        self.imgs = []
+        self.imgs = imgs
+
         self.size = [0, 0]
         self.index = 0
 
@@ -31,14 +36,16 @@ class Window:
         self.btn_next = tkinter.Button(text="Next", command=self.next_image)
         self.btn_next.place(x=-100, y=-100)
 
+        if len(imgs) > 0:
+            if len(imgs) > 1:
+                self.btn_next.place(x=410, y=155)
+            self.open_image(0)
+
         self.window.bind('<Button-1>', self.create_point)
 
         self.window.mainloop()
 
-    def update_image(self, url=None):
-        if url is not None:
-            pass
-
+    def update_image(self):
         # image resize
         if self.img.size[0] > self.img.size[1]:
             self.img = self.img.resize((400, round(self.img.size[1] / (self.img.size[0] / 400))))
@@ -53,13 +60,17 @@ class Window:
 
         self.window.update()
 
-    def next_image(self, ):
-        # Open the next image
-        self.index += 1
-        self.img = Image.open(self.imgs[self.index]).convert('RGBA')
+    def open_image(self, index):
+        self.img = Image.open(self.imgs[index]).convert('RGBA')
         self.size = [self.img.size[0], self.img.size[1]]
 
         self.update_image()
+
+    def next_image(self, ):
+        # Open the next image
+        self.index += 1
+
+        self.open_image(self.index)
 
         if self.index + 1 >= len(self.imgs):
             self.btn_next.place(x=-100, y=-100)
@@ -67,6 +78,7 @@ class Window:
         self.window.update()
 
     def create_point(self, event):
+        print(self.imgs)
         x, y = event.x_root - self.window.winfo_x() - 8, event.y_root - self.window.winfo_y() - 31
 
         if x <= 400 and y <= 400:
@@ -95,7 +107,7 @@ class Window:
 
     def remove_button(self, ):
         # save old image
-        self.img.save("old_" + re.sub(r"^.*/", "", self.imgs[self.index]))
+        self.img.save("old_" + re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
 
         # Green circle
         self.canvas.create_oval(460, 130, 470, 140, fill="green")
@@ -152,72 +164,76 @@ class Window:
         # save image
         self.img = self.img.crop((pos[0], pos[1], pos[2], pos[3]))
         self.img.resize(([self.img.size[0], self.img.size[1]]))
-        self.img.save(re.sub(r"^.*/", "", self.imgs[self.index]))
+        self.img.save(re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
+        print(re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
         self.update_image()
 
 
 if len(sys.argv) > 1:
-    for url in sys.argv[1:]:
-        img = Image.open(url).convert('RGBA')
+    if sys.argv[1] == "--with_interface":
+        window = Window(sys.argv[2:])
+    else:
+        for url in sys.argv[1:]:
+            img = Image.open(url).convert('RGBA')
 
-        # save old image
-        img.save("old_" + re.sub(r"^.*\\", "", url))
+            # save old image
+            img.save("old_" + re.sub(r"^.*[/\\]", "", url))
 
-        # BG removing
-        rep_value = (0, 0, 0, 0)
-        seed = (0, 0)
-        ImageDraw.floodfill(img, seed, rep_value, thresh=100)
+            # BG removing
+            rep_value = (0, 0, 0, 0)
+            seed = (0, 0)
+            ImageDraw.floodfill(img, seed, rep_value, thresh=100)
 
-        seed = (img.size[0] - 1, 0)
-        ImageDraw.floodfill(img, seed, rep_value, thresh=100)
+            seed = (img.size[0] - 1, 0)
+            ImageDraw.floodfill(img, seed, rep_value, thresh=100)
 
-        seed = (0, img.size[1] - 1)
-        ImageDraw.floodfill(img, seed, rep_value, thresh=100)
+            seed = (0, img.size[1] - 1)
+            ImageDraw.floodfill(img, seed, rep_value, thresh=100)
 
-        seed = (img.size[0] - 1, img.size[1] - 1)
-        ImageDraw.floodfill(img, seed, rep_value, thresh=100)
+            seed = (img.size[0] - 1, img.size[1] - 1)
+            ImageDraw.floodfill(img, seed, rep_value, thresh=100)
 
-        # Crop
-        pixels = img.load()
-        pos = [0, 0, 0, 0]
+            # Crop
+            pixels = img.load()
+            pos = [0, 0, 0, 0]
 
-        # X
-        for x in range(img.size[0]):
-            if pos[0] != 0:
-                break
-
-            for y in range(img.size[1]):
-                if pixels[x, y] != (0, 0, 0, 0):
-                    pos[0] = x - 1
-
-        # Y
-        for y in range(img.size[1]):
-            if pos[1] != 0:
-                break
-
+            # X
             for x in range(img.size[0]):
-                if pixels[x, y] != (0, 0, 0, 0):
-                    pos[1] = y - 1
+                if pos[0] != 0:
+                    break
 
-        # -X
-        for x in range(img.size[0] - 1, 1, -1):
-            if pos[2] != 0:
-                break
+                for y in range(img.size[1]):
+                    if pixels[x, y] != (0, 0, 0, 0):
+                        pos[0] = x - 1
 
-            for y in range(img.size[1] - 1, 1, -1):
-                if pixels[x, y] != (0, 0, 0, 0):
-                    pos[2] = x + 1
+            # Y
+            for y in range(img.size[1]):
+                if pos[1] != 0:
+                    break
 
-        # -Y
-        for y in range(img.size[1] - 1, 1, -1):
-            if pos[3] != 0:
-                break
+                for x in range(img.size[0]):
+                    if pixels[x, y] != (0, 0, 0, 0):
+                        pos[1] = y - 1
 
+            # -X
             for x in range(img.size[0] - 1, 1, -1):
-                if pixels[x, y] != (0, 0, 0, 0):
-                    pos[3] = y + 1
+                if pos[2] != 0:
+                    break
 
-        # save image
-        img.crop((pos[0], pos[1], pos[2], pos[3])).save(re.sub(r"^.*\\", "", url))
+                for y in range(img.size[1] - 1, 1, -1):
+                    if pixels[x, y] != (0, 0, 0, 0):
+                        pos[2] = x + 1
+
+            # -Y
+            for y in range(img.size[1] - 1, 1, -1):
+                if pos[3] != 0:
+                    break
+
+                for x in range(img.size[0] - 1, 1, -1):
+                    if pixels[x, y] != (0, 0, 0, 0):
+                        pos[3] = y + 1
+
+            # save image
+            img.crop((pos[0], pos[1], pos[2], pos[3])).save(re.sub(r"^.*\\", "", url))
 else:
     window = Window()
