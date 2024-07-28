@@ -1,3 +1,5 @@
+import copy
+
 from PIL import Image, ImageDraw, ImageTk
 import re
 import sys
@@ -20,10 +22,12 @@ class Window:
         self.window.maxsize(475, 400)
 
         self.points = []
+        self.history = []
         self.imgs = imgs
 
         self.size = [0, 0]
         self.index = 0
+        self.history_index = 0
 
         self.canvas = tkinter.Canvas(bg="#f0f0f0", width=400, height=400)
 
@@ -36,7 +40,18 @@ class Window:
         self.btn_next = tkinter.Button(text="Next", command=self.next_image)
         self.btn_next.place(x=-100, y=-100)
 
+        self.btn_ctrl_z = tkinter.Button(text="Undo", command=self.ctrl_z)
+        self.btn_ctrl_z.place(x=-100, y=-100)
+
+        self.btn_ctrl_y = tkinter.Button(text="Redo", command=self.ctrl_y)
+        self.btn_ctrl_y.place(x=-100, y=-100)
+
+        self.btn_save = tkinter.Button(text="Save", command=self.save_img)
+        self.btn_save.place(x=-100, y=-100)
+
         if len(imgs) > 0:
+            self.btn_save.place(x=410, y=210)
+
             if len(imgs) > 1:
                 self.btn_next.place(x=410, y=155)
             self.open_image(0)
@@ -58,11 +73,23 @@ class Window:
         self.canvas.grid(row=1, column=1)
         self.canvas.image = pht
 
+        if len(self.history) > 1:
+            self.btn_ctrl_z.place(x=410, y=280)
+            self.btn_ctrl_y.place(x=410, y=320)
+
+        print(self.history)
+
         self.window.update()
 
     def open_image(self, index):
         self.img = Image.open(self.imgs[index]).convert('RGBA')
         self.size = [self.img.size[0], self.img.size[1]]
+
+        self.history_index = 0
+        self.history = [copy.deepcopy(self.img)]
+
+        self.btn_ctrl_z.place(x=-100, y=-100)
+        self.btn_ctrl_y.place(x=-100, y=-100)
 
         self.update_image()
 
@@ -76,6 +103,32 @@ class Window:
             self.btn_next.place(x=-100, y=-100)
 
         self.window.update()
+
+    def save_img(self, ):
+        # Save image
+        self.img.resize(([self.img.size[0], self.img.size[1]]))
+        self.img.save(re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
+        print(re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
+
+    def ctrl_z(self, ):
+        # Undo
+        if self.history_index > 0:
+            self.history_index -= 1
+
+            self.img = self.history[self.history_index].convert('RGBA')
+            self.size = [self.img.size[0], self.img.size[1]]
+
+            self.update_image()
+
+    def ctrl_y(self, ):
+        # Redo
+        if self.history_index < len(self.history) - 1:
+            self.history_index += 1
+
+            self.img = self.history[self.history_index].convert('RGBA')
+            self.size = [self.img.size[0], self.img.size[1]]
+
+            self.update_image()
 
     def create_point(self, event):
         print(self.imgs)
@@ -92,23 +145,17 @@ class Window:
 
         # Place the new image
         if len(self.imgs) > 0:
+
+            # Enabling the save button
+            self.btn_save.place(x=410, y=210)
+
+            # Enabling the next button
             if len(self.imgs) > 1:
                 self.btn_next.place(x=410, y=155)
 
-            self.img = Image.open(self.imgs[0]).convert('RGBA')
-
-            # image resize
-            if self.img.size[0] > self.img.size[1]:
-                self.img = self.img.resize((400, math.ceil(self.img.size[1] / (self.img.size[0] / 400))))
-            else:
-                self.img = self.img.resize((math.ceil(self.img.size[0] / (self.img.size[1] / 400)), 400))
-
-            self.update_image()
+            self.open_image(self.index)
 
     def remove_button(self, ):
-        # save old image
-        self.img.save("old_" + re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
-
         # Green circle
         self.canvas.create_oval(460, 130, 470, 140, fill="green")
 
@@ -161,11 +208,13 @@ class Window:
                 if pixels[x, y] != (0, 0, 0, 0):
                     pos[3] = y + 1
 
-        # save image
+        # Crop image
         self.img = self.img.crop((pos[0], pos[1], pos[2], pos[3]))
-        self.img.resize(([self.img.size[0], self.img.size[1]]))
-        self.img.save(re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
-        print(re.sub(r"^.*[/\\]", "", self.imgs[self.index]))
+
+        # Save the image in history
+        self.history = self.history[:self.history_index + 1]
+        self.history.append(copy.deepcopy(self.img))
+        self.history_index += 1
         self.update_image()
 
 
