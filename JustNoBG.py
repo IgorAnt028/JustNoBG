@@ -1,6 +1,7 @@
 import copy
 import re
 import sys
+import base64
 
 from tkinter import *
 from tkinter import ttk
@@ -18,14 +19,10 @@ class Window:
         self.window = Tk()
         self.window.title("JustNoBG")
 
-        self.window.iconbitmap("icon.ico")
-
-
         ttk.Style().configure(".", font=('Helvetica', 11), padding=8)
 
         self.window.geometry("520x400")
         self.window.resizable(False, False)
-
 
         self.points = []
         self.history = []
