@@ -1,12 +1,12 @@
 import copy
-
-from PIL import Image, ImageDraw, ImageTk
 import re
 import sys
-import math
 
-import tkinter
+from tkinter import *
+from tkinter import ttk
 import tkinter.filedialog as fd
+
+from PIL import Image, ImageDraw, ImageTk
 
 print(sys.argv)
 
@@ -15,11 +15,17 @@ class Window:
     def __init__(self, imgs=None):
         if imgs is None:
             imgs = []
-        self.window = tkinter.Tk()
+        self.window = Tk()
+        self.window.title("JustNoBG")
 
-        self.window.geometry("475x400")
-        self.window.minsize(475, 400)
-        self.window.maxsize(475, 400)
+        self.window.iconbitmap("icon.ico")
+
+
+        ttk.Style().configure(".", font=('Helvetica', 11), padding=8)
+
+        self.window.geometry("520x400")
+        self.window.resizable(False, False)
+
 
         self.points = []
         self.history = []
@@ -29,24 +35,24 @@ class Window:
         self.index = 0
         self.history_index = 0
 
-        self.canvas = tkinter.Canvas(bg="#f0f0f0", width=400, height=400)
+        self.canvas = Canvas(bg="#f0f0f0", width=400, height=400)
 
-        btn = tkinter.Button(text="Result", command=self.remove_button)
+        btn = ttk.Button(text="Remove", command=self.remove_button)
         btn.place(x=410, y=125)
 
-        btn = tkinter.Button(text="Open", command=self.open_files)
+        btn = ttk.Button(text="Open", command=self.open_files)
         btn.place(x=410, y=10)
 
-        self.btn_next = tkinter.Button(text="Next", command=self.next_image)
+        self.btn_next = ttk.Button(text="Next", command=self.next_image)
         self.btn_next.place(x=-100, y=-100)
 
-        self.btn_ctrl_z = tkinter.Button(text="Undo", command=self.ctrl_z)
+        self.btn_ctrl_z = ttk.Button(text="Undo", command=self.ctrl_z)
         self.btn_ctrl_z.place(x=-100, y=-100)
 
-        self.btn_ctrl_y = tkinter.Button(text="Redo", command=self.ctrl_y)
+        self.btn_ctrl_y = ttk.Button(text="Redo", command=self.ctrl_y)
         self.btn_ctrl_y.place(x=-100, y=-100)
 
-        self.btn_save = tkinter.Button(text="Save", command=self.save_img)
+        self.btn_save = ttk.Button(text="Save", command=self.save_img)
         self.btn_save.place(x=-100, y=-100)
 
         if len(imgs) > 0:
