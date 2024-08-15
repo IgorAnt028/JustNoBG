@@ -1,7 +1,6 @@
 import copy
 import re
 import sys
-import base64
 
 from tkinter import *
 from tkinter import ttk
